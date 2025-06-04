@@ -43,7 +43,7 @@ jobs:
       run: kubectl apply -f python-app-deployment.yaml  
 
     - name: Wait for Python job to complete
-      run: kubectl wait --for=condition=complete job/python-app-job --timeout=120s
+      run: kubectl wait --for=condition=complete job/python-app --timeout=120s
 
     - name: Show logs from Python job
       run: kubectl logs job/python-app-job
