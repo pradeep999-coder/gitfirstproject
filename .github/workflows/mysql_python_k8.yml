@@ -19,7 +19,9 @@ jobs:
         version: 'latest'
 
     - name: Set up Minikube
-      uses: medyagh/setup-minikube@v1
+      uses: medyagh/setup-minikube@latest
+      with:
+        cache: false
 
     - name: Start Minikube
       run: minikube start --driver=docker
