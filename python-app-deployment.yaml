@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: python-app
 spec:
+  progressDeadlineSeconds: 30
   replicas: 1
   selector:
     matchLabels:
