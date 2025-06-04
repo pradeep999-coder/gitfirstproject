@@ -1,4 +1,4 @@
-name: MySQL Python Integration Test
+name: MySQL + Python Container Integration
 
 on:
   push:
@@ -9,51 +9,15 @@ on:
       - 'requirements.txt'
 
 jobs:
-  mysql-python-test:
+  integration-test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:latest
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: testdb
-          MYSQL_USER: testuser
-          MYSQL_PASSWORD: testpassword
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptestpassword"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Wait for MySQL to be ready
-        run: |
-          for i in {1..30}; do
-            mysqladmin ping -h 127.0.0.1 -ptestpassword && break
-            echo "Waiting for MySQL..."
-            sleep 2
-          done
-
-      - name: Run Python script
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_USER: testuser
-          MYSQL_PASSWORD: testpassword
-          MYSQL_DATABASE: testdb
-        run: python mysql_test.py
+      - name: Build and run Docker Compose
+        run: docker-compose up --build --abort-on-container-exit
