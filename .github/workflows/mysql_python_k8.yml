@@ -1,50 +1,59 @@
-name: Run MySQL and Python containers on Kubernetes
+name: MySQL Python Integration Test
 
-on: push
+on:
+  push:
+    paths:
+      - '**.py'
+      - '**.yml'
+      - 'Dockerfile'
+      - 'requirements.txt'
 
 jobs:
-  run-on-kubernetes:
+  mysql-python-test:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:latest
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpassword
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptestpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Set up Minikube
-      uses: medyagh/setup-minikube@latest
-      with:
-        cache: false
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -ptestpassword && break
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
 
-    - name: Start Minikube
-      run: minikube start --driver=docker
-
-    - name: Build Python Docker image
-      run: docker build -t python-mysql-app:latest .
-
-    - name: Load Python image into Minikube
-      run: minikube image load python-mysql-app:latest
-
-    - name: Apply MySQL Kubernetes manifest
-      run: kubectl apply -f mysql-deployement.yaml
-
-    - name: Wait for MySQL pod to be ready
-      run: kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
-    
-      
-    - name: Deploy Python app
-      run: kubectl apply -f python-app-deployment.yaml  
-
-    - name: Wait for Python app deployment to be ready
-      run: kubectl rollout status deployment/python-app
-
-
-    - name: Show logs from Python job
-      run: kubectl logs deploy/python-app
+      - name: Run Python script
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpassword
+          MYSQL_DATABASE: testdb
+        run: python mysql_test.py
