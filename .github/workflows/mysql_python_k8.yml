@@ -47,4 +47,4 @@ jobs:
 
 
     - name: Show logs from Python job
-      run: kubectl logs job/python-app-job
+      run: kubectl logs deploy/python-app
