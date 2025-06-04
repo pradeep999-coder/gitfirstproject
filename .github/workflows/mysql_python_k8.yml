@@ -21,3 +21,37 @@ jobs:
 
       - name: Build and run Docker Compose
         run: docker-compose up --build --abort-on-container-exit
+
+      # ----------------- Kubernetes Starts Below -----------------
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up KinD (Kubernetes in Docker)
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: local-k8s
+
+      - name: Load Docker image into KinD
+        run: |
+          docker build -t python-mysql-app .
+          kind load docker-image python-mysql-app --name local-k8s
+
+      - name: Apply MySQL deployment to K8s
+        run: kubectl apply -f mysql-deployment.yaml
+
+      - name: Apply Python app deployment to K8s
+        run: kubectl apply -f python-app-deployment.yaml
+
+      - name: Wait for Pods to be Ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=mysql --timeout=60s
+          kubectl wait --for=condition=ready pod -l app=python-app --timeout=60s
+
+      - name: Show logs from Python app
+        run: |
+          POD_NAME=$(kubectl get pods -l app=python-app -o jsonpath="{.items[0].metadata.name}")
+          echo "📝 Logs from Python app pod: $POD_NAME"
+          kubectl logs "$POD_NAME"
