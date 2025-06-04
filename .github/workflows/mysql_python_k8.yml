@@ -50,8 +50,11 @@ jobs:
           kubectl wait --for=condition=ready pod -l app=mysql --timeout=60s
           kubectl wait --for=condition=ready pod -l app=python-app --timeout=60s
 
-      - name: Show logs from Python app
+      - name: Print Python app output from Kubernetes pod
         run: |
+          echo "🔍 Fetching logs from Python app pod..."
           POD_NAME=$(kubectl get pods -l app=python-app -o jsonpath="{.items[0].metadata.name}")
-          echo "📝 Logs from Python app pod: $POD_NAME"
+          echo "📝 Logs from pod: $POD_NAME"
+          echo "-----------------------------------"
           kubectl logs "$POD_NAME"
+          echo "-----------------------------------"
