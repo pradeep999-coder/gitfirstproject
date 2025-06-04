@@ -1,0 +1,47 @@
+name: Run MySQL and Python containers on Kubernetes
+
+on: push
+
+jobs:
+  run-on-kubernetes:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Set up Minikube
+      uses: medyagh/setup-minikube@v1
+
+    - name: Start Minikube
+      run: minikube start --driver=docker
+
+    - name: Build Python Docker image
+      run: docker build -t python-mysql-app:latest .
+
+    - name: Load Python image into Minikube
+      run: minikube image load python-mysql-app:latest
+
+    - name: Apply MySQL Kubernetes manifest
+      run: kubectl apply -f mysql-deployement.yaml
+
+    - name: Wait for MySQL pod to be ready
+      run: kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
+    
+      
+    - name: Deploy Python app
+      run: kubectl apply -f python-app-deployment.yml  
+
+    - name: Wait for Python job to complete
+      run: kubectl wait --for=condition=complete job/python-app-job --timeout=120s
+
+    - name: Show logs from Python job
+      run: kubectl logs job/python-app-job
