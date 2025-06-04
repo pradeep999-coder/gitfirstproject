@@ -16,4 +16,12 @@ spec:
       - name: python-app
         image: python-mysql-app
         imagePullPolicy: Never
-        
+        env:
+        - name: MYSQL_HOST
+          value: mysql
+        - name: MYSQL_USER
+          value: testuser
+        - name: MYSQL_PASSWORD
+          value: testpassword
+        - name: MYSQL_DATABASE
+          value: testdb
