@@ -40,7 +40,7 @@ jobs:
           kind load docker-image python-mysql-app --name local-k8s
 
       - name: Apply MySQL deployment to K8s
-        run: kubectl apply -f mysql-deployment.yaml
+        run: kubectl apply -f mysql-deployement.yaml
 
       - name: Apply Python app deployment to K8s
         run: kubectl apply -f python-app-deployment.yaml
